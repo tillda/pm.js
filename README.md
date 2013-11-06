@@ -4,6 +4,10 @@ This is basically a 3kb drop-in replacement for the "&" syntax in bash.
 
 It **launches multiple commands in background** and **merges their standard output**.
 
+## Example output
+
+![ScreenShot](http://cl.ly/SKyK/1.%20node%20pm.js%20(node)%20(via%20Ember).png)
+
 ## Additional features
 
 - Reliable Ctrl+C : it kills all the launched processes
