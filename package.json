@@ -1,0 +1,15 @@
+{
+  "name": "ProjectManager",
+  "version": "0.1.0",
+  "description": "Concurrent task runner & output merger",
+  "main": "pm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michal Till",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "commander": "~2.0.0",
+    "colors": "~0.6.2"
+  }
+}
