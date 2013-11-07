@@ -1,3 +1,4 @@
+#!/usr/local/bin/node
 
 var spawn = require('child_process').spawn;
 var fs = require('fs');
@@ -10,23 +11,19 @@ program
     .option('-g, --get [name]', 'Only write the command to stdout')
     .parse(process.argv);
 
+var config = JSON.parse(fs.readFileSync('./pm.json'));
+var processes = config.processes;
 
-/****/ throw new Error("It works fine but update tasks list below and remove this error in pm.js.") /****/
-
-var processes = [
-    /*
-
-    Example tasks:
-
-    {name: "clj-tdd",       exec: "lein",   args: "with-profile bleeding midje :autotest", cwd:"editor"},
-    {name: "cljs-build",    exec: "lein",   args: "cljsbuild auto dev", cwd:"editor"},
-    {name: "cljx",          exec: "lein",   args: "cljx auto", cwd: "editor"},
-    {name: "devserver",     exec: "node",   args: "app.js", cwd:"devserver"},
-    {name: "grunt",         exec: "grunt",  args: "watch", cwd : "client"},
-    {name: "livereload",    exec: "grunt",  args: "watch --gruntfile Gruntfile-LiveReload.js", cwd : "client"},
-    {name: "api-server",    exec: "npm",    args: "start", cwd : "server"}
-    */
-];
+processes = processes.filter(function(process) {
+    var enabled = process.disabled != true && process.enabled != false;
+    if (process.name == program.process) {
+        enabled = true;
+    }
+    if (!enabled) {
+        console.log("Process", process.name, "is not enabled, skipping.");
+    }
+    return enabled;
+});
 
 var nameMaxLength = 0;
 processes.forEach(function(process) {
@@ -37,6 +34,9 @@ if (program.get) {
     var p = processes.filter(function(process) {
         return process.name == program.get;
     })[0];
+    if (!p) {
+        throw new Error("Can't find " + program.get + " in process definitions");
+    }
     console.log(p.exec + " " + p.args);
     process.exit(0);
 }
@@ -46,6 +46,9 @@ if (program.process) {
     processes = processes.filter(function(process) {
         return process.name == program.process;
     });
+    if (processes.length == 0) {
+        throw new Error("Can't find " + program.process + " in process definitions");
+    }
 }
 
 var
