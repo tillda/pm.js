@@ -37,6 +37,5 @@ It **launches multiple commands in *background*** and **merges their standard ou
 
 ## Usage
 
-It sucks because the tasks are hard-wired in the source for now. Check it out elsewhere, copy `pm.js` to your project, customize it and then `node pm.js`.
-
-Or do what is written in TODO above :-).
+1. Ooops, there is no npm install... shit!
+2. Now you would just create `pm.json` file and run `pm` in that directory if there was one :-(
