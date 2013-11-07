@@ -16,7 +16,7 @@ var processes = config.processes;
 
 processes = processes.filter(function(process) {
     var enabled = process.disabled != true && process.enabled != false;
-    if (process.name == program.process) {
+    if ((process.name == program.process) || (process.name == program.get)) {
         enabled = true;
     }
     if (!enabled) {
