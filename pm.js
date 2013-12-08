@@ -8,34 +8,25 @@ var colors = require('colors');
 
 program
     .option('-p, --process [name]', 'Start only this process')
-    .option('-g, --get [name]', 'Only write the command to stdout')
+    .option('-c, --cmd [name]', 'Only write the command to stdout')
+    .option('-g, --group [name]', 'Only start processes that belond to this group')
     .parse(process.argv);
 
 var config = JSON.parse(fs.readFileSync('./pm.json'));
 var processes = config.processes;
 
-processes = processes.filter(function(process) {
-    var enabled = process.disabled != true && process.enabled != false;
-    if ((process.name == program.process) || (process.name == program.get)) {
-        enabled = true;
-    }
-    if (!enabled) {
-        console.log("Process", process.name, "is not enabled, skipping.");
-    }
-    return enabled;
-});
 
 var nameMaxLength = 0;
 processes.forEach(function(process) {
     nameMaxLength = Math.max(process.name.length, nameMaxLength);
 });
 
-if (program.get) {
+if (program.cmd) {
     var p = processes.filter(function(process) {
-        return process.name == program.get;
+        return process.name == program.cmd;
     })[0];
     if (!p) {
-        throw new Error("Can't find " + program.get + " in process definitions");
+        throw new Error("Can't find " + program.cmd + " in process definitions");
     }
     console.log(p.exec + " " + p.args);
     process.exit(0);
@@ -50,6 +41,33 @@ if (program.process) {
         throw new Error("Can't find " + program.process + " in process definitions");
     }
 }
+
+if (program.group) {
+    console.log("Starting only group:", program.group);
+    var names = [];
+    processes = processes.filter(function(process) {
+        var belongsToGroup = (process.group == program.group || (Array.isArray(process.group) && (process.group.indexOf(programGroup) !== -1)));
+        if (belongsToGroup) {
+            names.push(process.name);
+        }
+        return belongsToGroup;
+    });
+    console.log("That is: ", names.join(", "), " - ", processes.length, " processes.");
+}
+
+processes = processes.filter(function(process) {
+    var enabled = process.disabled != true && process.enabled != false;
+    if ((process.name == program.process) || (process.name == program.cmd)) {
+        enabled = true;
+    }
+    if (program.cmd || program.process) {
+        enabled = true;
+    }
+    if (!enabled) {
+        console.log("Process", process.name, "is not enabled, skipping.");
+    }
+    return enabled;
+});
 
 var
     exiting = false,
