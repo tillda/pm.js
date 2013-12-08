@@ -14,7 +14,8 @@ It **launches multiple commands in *background*** and **merges their standard ou
 - Visual separators between outputs
 - Binary `pm` (instlled via npm) reads `pm.json` from a working directory
 - `pm -p name` launches only process "name"
-- `pm -g name` only shows the command
+- `pm -g groupname` launches only processes from group groupname
+- `pm -c name` only shows the command
 
 ## Example process definition file
 
@@ -22,13 +23,13 @@ It **launches multiple commands in *background*** and **merges their standard ou
 {
     "processes" : [
 
-    {"name": "clj-tdd",       "exec": "lein",   "args": "with-profile bleeding midje :autotest", "cwd":"editor"},
-    {"name": "cljs-build",    "exec": "lein",   "args": "cljsbuild auto dev", "cwd":"editor"},
-    {"name": "cljx",          "exec": "lein",   "args": "cljx auto", "cwd": "editor"},
-    {"disabled": true, "name": "livereload",    "exec": "grunt",  "args": "watch --gruntfile Gruntfile-LiveReload.js", "cwd" : "client"},
-    {"name": "devserver",     "exec": "node",   "args": "app.js", "cwd":"devserver"},
-    {"name": "grunt",         "exec": "grunt",  "args": "watch", "cwd" : "client"},
-    {"name": "api-server",    "exec": "npm",    "args": "start", "cwd" : "server"}
+    {"name": "clj-tdd", "group":"clj",      "exec": "lein",   "args": "with-profile bleeding midje :autotest", "cwd":"editor"},
+    {"name": "cljs-build", "group":"clj",   "exec": "lein",   "args": "cljsbuild auto dev", "cwd":"editor"},
+    {"name": "cljx","group":"clj",          "exec": "lein",   "args": "cljx auto", "cwd": "editor"},
+    {"disabled": true, "name": "livereload","exec": "grunt",  "args": "watch --gruntfile Gruntfile-LiveReload.js", "cwd" : "client"},
+    {"name": "devserver", "group":"web",    "exec": "node",   "args": "app.js", "cwd":"devserver"},
+    {"name": "grunt",         				"exec": "grunt",  "args": "watch", "cwd" : "client"},
+    {"name": "api-server",    				"exec": "npm",    "args": "start", "cwd" : "server"}
 
     ]
 }
@@ -38,5 +39,5 @@ It **launches multiple commands in *background*** and **merges their standard ou
 ## Usage
 
 1. Ooops, there is no npm install... shit!
-2. Checkout & symlink pm.js to a directory in PATH so it is accessible as an exectuable from anywher
+2. Checkout & symlink pm.js to a directory in PATH so it is accessible as an exectuable from anywhere
 2. Create `pm.json` file and run `pm` in that directory
