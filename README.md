@@ -38,4 +38,5 @@ It **launches multiple commands in *background*** and **merges their standard ou
 ## Usage
 
 1. Ooops, there is no npm install... shit!
-2. Now you would just create `pm.json` file and run `pm` in that directory if there was one :-(
+2. Checkout & symlink pm.js to a directory in PATH so it is accessible as an exectuable from anywher
+2. Create `pm.json` file and run `pm` in that directory
