@@ -12,10 +12,19 @@ It **launches multiple commands in *background*** and **merges their standard ou
 
 - Reliable Ctrl+C : it kills all the launched processes
 - Visual separators between outputs
-- Binary `pm` (instlled via npm) reads `pm.json` from a working directory
+- Binary `pm` reads `pm.json` from a working directory
 - `pm -p name` launches only process "name"
 - `pm -g groupname` launches only processes from group groupname
 - `pm -c name` only shows the command
+
+## TODO
+
+- Simple keyboard shortcuts to restart one of the processes
+- I have troubles launching livereload this way - don't know why
+- Sometimes the sub-processes don't print out full error messages
+- Throttle (group) output lines by some time interval (300ms)
+- Add "color" option to processes
+- Move from pm.JSON to .JS (module)
 
 ## Example process definition file
 
