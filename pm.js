@@ -80,7 +80,16 @@ function times(ch, n) {
     return Array(n+1).join(ch);
 }
 
-function format(name, output, changed) {
+function stdoutLinesFormatter(str) {
+    return str;
+}
+
+function stderrLinesFormatter(str) {
+    return str.replace(/\n/g, "\n█  ".red);
+}
+
+function addHeaders(name, output, changed, linesFormatter) {
+    var header = "";
     if (changed) {
         var padding = ""
         var ch = "━";
@@ -88,24 +97,39 @@ function format(name, output, changed) {
         for (i=name.length; i<nameMaxLength; i++) {
             padding = padding + ch;
         }
-        output = "\n" + times(ch, 2).blue + "  " + name.white + " " + times(ch, nameMaxLength - name.length + width).blue + (reBeginsWithEnter.test(output) ? "" : "\n") + output;
+        header = "\n" + times(ch, 2).blue + "  " + name.white + " " + times(ch, nameMaxLength - name.length + width).blue + (reBeginsWithEnter.test(output) ? "" : "\n");
     }
-    return output.replace(/\n([^$])/g, "\n" + "$1");
+    return header + linesFormatter(output.replace(/\n([^$])/g, "\n" + "$1"));
+}
+
+function writeOut(str) {
+    process.stdout.write(str);
 }
 
 function run(spec) {
     var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
-    prc.stdout.on('data', function(data) {
+
+    function onData(data, linesFormatter) {
         var str = data.toString();
         if ((lastProcess != prc) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
             str = "\n" + str;
         }
-        process.stdout.write(format(spec.name, str, lastProcess != prc));
+        writeOut(addHeaders(spec.name, str, lastProcess != prc, linesFormatter));
         lastEndedWithEnter = reEndsWithEnter.test(str);
         lastProcess = prc;
+    }
+
+    prc.stdout.on('data', function(data) {
+        onData(data, stdoutLinesFormatter);
     });
+
+    prc.stderr.on('data', function(data) {
+        onData(data, stderrLinesFormatter);
+        writeOut('\u0007');
+    });
+
     prc.on('close', function(code) {
         if (!exiting && (code != 0)) {
             console.log(spec.name, 'failed with code:', code);
