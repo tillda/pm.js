@@ -10,20 +10,54 @@ program
     .option('-p, --process [name]', 'Start only this process')
     .option('-c, --cmd [name]', 'Only write the command to stdout')
     .option('-g, --group [name]', 'Only start processes that belond to this group')
+    .option('-i, --info', 'Get list of processes')
     .parse(process.argv);
 
 var config = JSON.parse(fs.readFileSync('./pm.json'));
 var processes = config.processes;
 
-var nameMaxLength = 0;
+var maxLengths = {};
+
+function addLength(name, str) {
+    maxLengths[name] = Math.max((str || "").length, (maxLengths[name] || 0));
+}
+
 processes.forEach(function(process) {
-    nameMaxLength = Math.max(process.name.length, nameMaxLength);
-    if (!process.args) {
-        var tokens = process.exec.split(" ");
+    if (process.cmd) {
+        var tokens = process.cmd.split(" ");
         process.exec = tokens[0];
         process.args = tokens.splice(1).join(" ");
     }
+    addLength("name", process.name);
+    addLength("exec", process.exec);
+    addLength("args", process.args);
+    addLength("cmd", process.cmd);
+    addLength("cwd", process.cwd);
+    addLength("group", process.group);
 });
+
+
+function addPadding(str, length, ch) {
+    str = str || "";
+    while (str.length<length) {
+        str = str + (ch || " ");
+    }
+    return str;
+}
+
+if (program.info) {
+    processes.forEach(function(p) {
+        writeOut(addPadding(p.name, maxLengths.name+2).green);
+        writeOut("  "+addPadding(p.group, maxLengths.group+3));
+        writeOut(addPadding(p.cwd, maxLengths.cwd+3).blue);
+        writeOut(addPadding(p.exec, maxLengths.exec+1).red);
+        writeOut(addPadding(p.args, maxLengths.args+1).white);
+        writeOut(" ");
+        writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", "Disabled".length+1));
+        writeOut("\n");
+    })
+    process.exit(0);
+}
 
 if (program.cmd) {
     var p = processes.filter(function(process) {
@@ -98,10 +132,10 @@ function addHeaders(name, output, changed, linesFormatter) {
         var padding = ""
         var ch = "━";
         var width = 15
-        for (i=name.length; i<nameMaxLength; i++) {
+        for (i=name.length; i<maxLengths.name; i++) {
             padding = padding + ch;
         }
-        header = "\n" + times(ch, 2).blue + "  " + name.white + " " + times(ch, nameMaxLength - name.length + width).blue + (reBeginsWithEnter.test(output) ? "" : "\n");
+        header = "\n" + times(ch, 2).blue + "  " + name.white + " " + times(ch, maxLengths.name - name.length + width).blue + (reBeginsWithEnter.test(output) ? "" : "\n");
     }
     return header + linesFormatter(output.replace(/\n([^$])/g, "\n" + "$1"));
 }
@@ -148,4 +182,11 @@ process.on('SIGINT', function() {
     processes.forEach(function(spec) {
         process.kill(spec.process.pid);
     })
+});
+
+var stdin = process.openStdin();
+require('tty').setRawMode(true);
+
+stdin.on('keypress', function (chunk, key) {
+  process.stdout.write('Get Chunk: ' + chunk + '\n');
 });
