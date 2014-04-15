@@ -131,7 +131,9 @@ function stdoutLinesFormatter(str) {
 }
 
 function stderrLinesFormatter(str) {
-    return str.replace(/\n/g, "\n█  ".red);
+    str = str.replace(/\n\s*/, "");
+    var marker = "  ERROR  ".redBG.black + " ";
+    return marker + str.replace(/\n/g, "\n"+marker);
 }
 
 function addHeaders(name, output, changed, linesFormatter) {
@@ -143,7 +145,7 @@ function addHeaders(name, output, changed, linesFormatter) {
         for (i=name.length; i<maxLengths.name; i++) {
             padding = padding + ch;
         }
-        header = "\n" + times(ch, 2).blue + "  " + name.white + " " + times(ch, maxLengths.name - name.length + width).blue + (reBeginsWithEnter.test(output) ? "" : "\n");
+        header = "\n" + times(ch, 2).grey + "  " + name.white + " " + times(ch, maxLengths.name - name.length + width).grey + (reBeginsWithEnter.test(output) ? "" : "\n");
     }
     return header + linesFormatter(output.replace(/\n([^$])/g, "\n" + "$1"));
 }
@@ -152,7 +154,18 @@ function writeOut(str) {
     process.stdout.write(str);
 }
 
+function fail(message) {
+    writeOut(addHeaders("ERROR".red, message.white, true, stdoutLinesFormatter));
+    killProcesses();
+    process.exit(1);
+}
+
 function run(spec) {
+
+    if (spec.cwd && !fs.existsSync(spec.cwd)) {
+        fail("Failed starting process '"+spec.name+"', directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').");
+    }
+
     var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
