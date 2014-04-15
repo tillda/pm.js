@@ -6,6 +6,9 @@ var program = require('commander');
 var path = require('path');
 var colors = require('colors');
 
+var keypress = require('keypress');
+var tty = require('tty');
+
 program
     .option('-p, --process [name]', 'Start only this process')
     .option('-c, --cmd [name]', 'Only write the command to stdout')
@@ -55,8 +58,13 @@ if (program.info) {
         writeOut(" ");
         writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", "Disabled".length+1));
         writeOut("\n");
-    })
+    });
     process.exit(0);
+}
+
+
+function checkWorkingDirectory(wd) {
+
 }
 
 if (program.cmd) {
@@ -177,16 +185,36 @@ function run(spec) {
 
 processes.forEach(run);
 
-process.on('SIGINT', function() {
+function killProcesses() {
     exiting = true;
+    writeOut("\n\nExiting: ".white);
     processes.forEach(function(spec) {
+        writeOut(spec.name+ " ");
         process.kill(spec.process.pid);
-    })
+    });
+    writeOut("Done.".green);
+}
+
+process.on('SIGINT', function() {
+    killProcesses();
 });
 
-var stdin = process.openStdin();
-require('tty').setRawMode(true);
+var keypress = require('keypress')
+  , tty = require('tty');
 
-stdin.on('keypress', function (chunk, key) {
-  process.stdout.write('Get Chunk: ' + chunk + '\n');
+keypress(process.stdin);
+
+process.stdin.on('keypress', function (ch, key) {
+    //key = { name: 'c', ctrl: true, meta: false, shift: false, sequence: '\u0003' }
+    if (key && key.ctrl && key.name == 'c') {
+        killProcesses();
+        process.exit(0);
+    }
 });
+
+if (typeof process.stdin.setRawMode == 'function') {
+  process.stdin.setRawMode(true);
+} else {
+  tty.setRawMode(true);
+}
+process.stdin.resume();
