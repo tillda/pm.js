@@ -15,10 +15,14 @@ program
 var config = JSON.parse(fs.readFileSync('./pm.json'));
 var processes = config.processes;
 
-
 var nameMaxLength = 0;
 processes.forEach(function(process) {
     nameMaxLength = Math.max(process.name.length, nameMaxLength);
+    if (!process.args) {
+        var tokens = process.exec.split(" ");
+        process.exec = tokens[0];
+        process.args = tokens.splice(1).join(" ");
+    }
 });
 
 if (program.cmd) {
