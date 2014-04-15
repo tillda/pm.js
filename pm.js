@@ -226,8 +226,8 @@ process.stdin.on('keypress', function (ch, key) {
 });
 
 if (typeof process.stdin.setRawMode == 'function') {
-  process.stdin.setRawMode(true);
+    process.stdin.setRawMode(true);
 } else {
-  tty.setRawMode(true);
+    tty.setRawMode(true);
 }
 process.stdin.resume();
