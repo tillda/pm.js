@@ -5,7 +5,7 @@ var fs = require('fs');
 var program = require('commander');
 var path = require('path');
 var colors = require('colors');
-
+var shellParse = require('shell-quote').parse;
 var keypress = require('keypress');
 var tty = require('tty');
 
@@ -27,9 +27,11 @@ function addLength(name, str) {
 
 processes.forEach(function(process) {
     if (process.cmd) {
-        var tokens = process.cmd.split(" ");
+        var tokens = shellParse(process.cmd);
         process.exec = tokens[0];
-        process.args = tokens.splice(1).join(" ");
+        var argsArray = tokens.splice(1);
+        process.args = argsArray.join(" ");
+        process.argsArray = argsArray;
     }
     addLength("name", process.name);
     addLength("exec", process.exec);
