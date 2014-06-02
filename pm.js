@@ -129,13 +129,24 @@ function times(ch, n) {
 }
 
 function stdoutLinesFormatter(str) {
+    str = str.replace(/\n/g, "\n");
     return str;
 }
 
+var markers = {
+    error : "  ERROR  ".redBG.black + " "
+};
+
 function stderrLinesFormatter(str) {
-    str = str.replace(/\n\s*/, "");
-    var marker = "  ERROR  ".redBG.black + " ";
-    return marker + str.replace(/\n/g, "\n"+marker);
+    str = str.replace(/\n/g, "\n");
+    var append = "";
+    //str = str.replace(/\n\s*$/, "\n");
+    var marker = "_ERROR_";
+    if (/\n\s*/.test(str)) {
+        append = "\n";
+    }
+    var result =  marker + str.replace(/\n\s*$/, "").replace(/^\n/, "").replace(/\n/g, "\n"+marker);
+    return result + append;
 }
 
 function isSomeProcessRunning() {
@@ -166,6 +177,16 @@ function fail(message) {
     process.exit(1);
 }
 
+var lastStdType = "stdout";
+
+function addEnterBefore(str) {
+    return "\n" + str.replace(/^\n/, "");
+}
+
+function isWhitespace(str) {
+    return !!str.replace(/\s+/g, "");
+}
+
 function run(spec) {
 
     if (spec.cwd && !fs.existsSync(spec.cwd)) {
@@ -177,22 +198,30 @@ function run(spec) {
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
 
-    function onData(data, linesFormatter) {
+    function onData(data, linesFormatter, stdType) {
         var str = data.toString();
-        if ((lastProcess != prc) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
-            str = "\n" + str;
+        if ((lastProcess != prc) && !isWhitespace(str) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
+            str = addEnterBefore(str);
+        } else if ((stdType != lastStdType) && !isWhitespace(str) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
+            str = addEnterBefore(str);
         }
-        writeOut(addHeaders(spec.name, str, lastProcess != prc, linesFormatter));
+        if (stdType != lastStdType) {
+            writeOut("\n");
+        }
+        lastStdType = stdType;
+        var thisOutput = addHeaders(spec.name, str, lastProcess != prc, linesFormatter);
+        thisOutput = thisOutput.replace(/_ERROR_/g, markers.error);
+        writeOut(thisOutput);
         lastEndedWithEnter = reEndsWithEnter.test(str);
         lastProcess = prc;
     }
 
     prc.stdout.on('data', function(data) {
-        onData(data, stdoutLinesFormatter);
+        onData(data, stdoutLinesFormatter, "stdout");
     });
 
     prc.stderr.on('data', function(data) {
-        onData(data, stderrLinesFormatter);
+        onData(data, stderrLinesFormatter, "stderr");
         writeOut('\u0007');
     });
 
