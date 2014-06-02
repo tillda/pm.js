@@ -138,6 +138,10 @@ function stderrLinesFormatter(str) {
     return marker + str.replace(/\n/g, "\n"+marker);
 }
 
+function isSomeProcessRunning() {
+    return !!processes.filter(function(p) { return !!p.running; }).length;
+}
+
 function addHeaders(name, output, changed, linesFormatter) {
     var header = "";
     if (changed) {
@@ -169,6 +173,7 @@ function run(spec) {
     }
 
     var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
+    spec.running = true;
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
 
@@ -191,11 +196,28 @@ function run(spec) {
         writeOut('\u0007');
     });
 
-    prc.on('close', function(code) {
+    prc.on('close', function(code, signal) {
         if (!exiting && (code != 0)) {
-            console.log(spec.name, 'failed with code:', code);
+            console.log("Process " + spec.name + " failed with code " + code + " (signal " + signal + ").");
+        } else {
+            console.log("Process " + spec.name + " was terminated. (Code " + code + ", signal " + signal + ")");
+        }
+        spec.running = false;
+        if (!isSomeProcessRunning()) {
+            writeOut("Nothing to do.");        
+            process.exit(0);
         }
     });
+
+    prc.on('error', function(error) {
+        console.log(spec.name, "error", error);
+    });
+
+    prc.on('disconnect', function(error) {
+        console.log(spec.name, "disconnect", error);
+    });
+
+
 }
 
 processes.forEach(run);
@@ -205,7 +227,11 @@ function killProcesses() {
     writeOut("\n\nExiting: ".white);
     processes.forEach(function(spec) {
         writeOut(spec.name+ " ");
-        process.kill(spec.process.pid);
+        try {
+            process.kill(spec.process.pid);
+        } catch (e) {
+        }
+        spec.running = false;
     });
     writeOut("Done.".green);
 }
@@ -220,7 +246,6 @@ var keypress = require('keypress')
 keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
-    //key = { name: 'c', ctrl: true, meta: false, shift: false, sequence: '\u0003' }
     if (key && key.ctrl && key.name == 'c') {
         killProcesses();
         process.exit(0);
