@@ -140,7 +140,6 @@ var markers = {
 function stderrLinesFormatter(str) {
     str = str.replace(/\n/g, "\n");
     var append = "";
-    //str = str.replace(/\n\s*$/, "\n");
     var marker = "_ERROR_";
     if (/\n\s*/.test(str)) {
         append = "\n";
