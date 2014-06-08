@@ -199,9 +199,9 @@ function run(spec) {
 
     function onData(data, linesFormatter, stdType) {
         var str = data.toString();
-        if ((lastProcess != prc) && !isWhitespace(str) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
-            str = addEnterBefore(str);
-        } else if ((stdType != lastStdType) && !isWhitespace(str) && !lastEndedWithEnter && !reBeginsWithEnter.test(str)) {
+        var principalChange = (lastProcess != prc) || (stdType != lastStdType);
+        var blankLineAlreadyPresented = isWhitespace(str) || lastEndedWithEnter || reBeginsWithEnter.test(str);
+        if (principalChange && blankLineAlreadyPresented) {
             str = addEnterBefore(str);
         }
         if (stdType != lastStdType) {
