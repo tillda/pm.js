@@ -226,9 +226,9 @@ function run(spec) {
 
     prc.on('close', function(code, signal) {
         if (!exiting && (code != 0)) {
-            console.log("Process " + spec.name + " failed with code " + code + " (signal " + signal + ").");
+            console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
         } else {
-            console.log("Process " + spec.name + " was terminated. (Code " + code + ", signal " + signal + ")");
+            console.log("Process " + spec.name + " was terminated. (Code: " + code + ", signal: " + signal + ")");
         }
         spec.running = false;
         if (!isSomeProcessRunning()) {
