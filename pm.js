@@ -134,7 +134,7 @@ function stdoutLinesFormatter(str) {
 }
 
 var markers = {
-    error : "  ERROR  ".redBG.black + " "
+    error : "  ERROR  ".red + " "
 };
 
 function stderrLinesFormatter(str) {
@@ -154,16 +154,17 @@ function isSomeProcessRunning() {
 
 function addHeaders(name, output, changed, linesFormatter) {
     var header = "";
+    var formattedOutput = linesFormatter(output);
     if (changed) {
         var padding = ""
         var ch = "━";
-        var width = 15
+        var width = 25
         for (i=name.length; i<maxLengths.name; i++) {
             padding = padding + ch;
         }
-        header = "\n" + times(ch, 2).grey + "  " + name.white + " " + times(ch, maxLengths.name - name.length + width).grey + (reBeginsWithEnter.test(output) ? "" : "\n");
+        header = "\n" + times(ch, 2).blue + " " + (" " + name + " ").white  + times(ch, maxLengths.name - name.length + width).blue + (reBeginsWithEnter.test(formattedOutput) ? "" : "\n");
     }
-    return header + linesFormatter(output.replace(/\n([^$])/g, "\n" + "$1"));
+    return header + formattedOutput;
 }
 
 function writeOut(str) {
@@ -204,7 +205,7 @@ function run(spec) {
         if (principalChange && blankLineAlreadyPresented) {
             str = addEnterBefore(str);
         }
-        if (stdType != lastStdType) {
+        if ((stdType != lastStdType)) {
             writeOut("\n");
         }
         lastStdType = stdType;
