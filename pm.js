@@ -134,7 +134,8 @@ function stdoutLinesFormatter(str) {
 }
 
 var markers = {
-    error : "  ERROR  ".red + " "
+    error : "✖ ERROR ".red + "  ",
+    errorSpace : "          "
 };
 
 function stderrLinesFormatter(str) {
@@ -144,12 +145,16 @@ function stderrLinesFormatter(str) {
     if (/\n\s*/.test(str)) {
         append = "\n";
     }
-    var result =  marker + str.replace(/\n\s*$/, "").replace(/^\n/, "").replace(/\n/g, "\n"+marker);
+    var result =  marker + str.replace(/\n\s*$/, "").replace(/^\n/, "").replace(/\n/g, "\n"+"_ERRORSPACE_");
     return result + append;
 }
 
 function isSomeProcessRunning() {
     return !!processes.filter(function(p) { return !!p.running; }).length;
+}
+
+function startsWithMarker(str) {
+    return /\s*_/.test(str);
 }
 
 function addHeaders(name, output, changed, linesFormatter) {
@@ -163,6 +168,9 @@ function addHeaders(name, output, changed, linesFormatter) {
             padding = padding + ch;
         }
         header = "\n" + times(ch, 2).blue + " " + (" " + name + " ").white  + times(ch, maxLengths.name - name.length + width).blue + (reBeginsWithEnter.test(formattedOutput) ? "" : "\n");
+        if (startsWithMarker(formattedOutput)) {
+            header = header + "\n";
+        }
     }
     return header + formattedOutput;
 }
@@ -205,12 +213,13 @@ function run(spec) {
         if (principalChange && blankLineAlreadyPresented) {
             str = addEnterBefore(str);
         }
-        if ((stdType != lastStdType)) {
+        if ((stdType != lastStdType) && (stdType != "stdout")) {
             writeOut("\n");
         }
         lastStdType = stdType;
         var thisOutput = addHeaders(spec.name, str, lastProcess != prc, linesFormatter);
         thisOutput = thisOutput.replace(/_ERROR_/g, markers.error);
+        thisOutput = thisOutput.replace(/_ERRORSPACE_/g, markers.errorSpace);
         writeOut(thisOutput);
         lastEndedWithEnter = reEndsWithEnter.test(str);
         lastProcess = prc;
