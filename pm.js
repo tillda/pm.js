@@ -288,7 +288,9 @@ function run(spec) {
 
 }
 
-processes.forEach(run);
+processes.forEach(function(spec) {
+    setTimeout(function() { run(spec); }, spec.delay || 1);
+});
 
 function killProcesses() {
     exiting = true;
