@@ -16,8 +16,8 @@ program
     .option('-i, --info', 'Get list of processes')
     .parse(process.argv);
 
-var config = JSON.parse(fs.readFileSync('./pm.json'));
-var processes = config.processes;
+var projectManagerConfig = JSON.parse(fs.readFileSync('./pm.json'));
+var processes = projectManagerConfig.processes;
 
 var maxLengths = {};
 
@@ -134,8 +134,8 @@ function stdoutLinesFormatter(str) {
 }
 
 var markers = {
-    error : "✖ ERROR ".red + "  ",
-    errorSpace : "          "
+    error : "•".red + "  ",
+    errorSpace : "•".red + "  "
 };
 
 function stderrLinesFormatter(str) {
@@ -145,7 +145,7 @@ function stderrLinesFormatter(str) {
     if (/\n\s*/.test(str)) {
         append = "\n";
     }
-    var result =  marker + str.replace(/\n\s*$/, "").replace(/^\n/, "").replace(/\n/g, "\n"+"_ERRORSPACE_");
+    var result =  marker + str.replace(/\n\s*$/, "").replace(/^\n/, "").replace(/\n/g, "\n"+"_ERRORSPACE_");    
     return result + append;
 }
 
@@ -195,6 +195,26 @@ function isWhitespace(str) {
     return !!str.replace(/\s+/g, "");
 }
 
+function shouldRingBell(str, patterns) {
+    if (!patterns) {
+        return false;
+    }
+    if (!Array.isArray(patterns)) {
+        patterns = [patterns]
+    }
+    var result = false;
+    patterns.forEach(function(pattern) {
+        if (str.indexOf(pattern) != -1) {
+            result = true;
+        }
+    });
+    return result;
+}
+
+function concatLines(s1, s2) {
+    return s1.replace(/\n+$/, "") + "\n\n" + s2.replace(/^\n+/, "") + "\n";
+}
+
 function run(spec) {
 
     if (spec.cwd && !fs.existsSync(spec.cwd)) {
@@ -206,22 +226,33 @@ function run(spec) {
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
 
+    var errorPatterns = [].concat(spec.errorPatterns || []).concat(projectManagerConfig.errorPatterns);
+
     function onData(data, linesFormatter, stdType) {
-        var str = data.toString();
+        var str = data.toString();      
+        var append = "";
+        if (shouldRingBell(str, errorPatterns)) {
+            append = '\u0007' + ' ✖ ERROR '.redBG.white;
+        }  
         var principalChange = (lastProcess != prc) || (stdType != lastStdType);
         var blankLineAlreadyPresented = isWhitespace(str) || lastEndedWithEnter || reBeginsWithEnter.test(str);
         if (principalChange && blankLineAlreadyPresented) {
             str = addEnterBefore(str);
         }
+        var thisOutput = addHeaders(spec.name, str, lastProcess != prc, linesFormatter);
         if ((stdType != lastStdType) && (stdType != "stdout")) {
             writeOut("\n");
+            thisOutput = thisOutput.replace(/^\s*_ERROR_\s*\n/, "");
         }
-        lastStdType = stdType;
-        var thisOutput = addHeaders(spec.name, str, lastProcess != prc, linesFormatter);
         thisOutput = thisOutput.replace(/_ERROR_/g, markers.error);
         thisOutput = thisOutput.replace(/_ERRORSPACE_/g, markers.errorSpace);
-        writeOut(thisOutput);
+        if (append) {
+            writeOut(concatLines(thisOutput, append))
+        } else {
+            writeOut(thisOutput);
+        }
         lastEndedWithEnter = reEndsWithEnter.test(str);
+        lastStdType = stdType;
         lastProcess = prc;
     }
 
@@ -231,7 +262,6 @@ function run(spec) {
 
     prc.stderr.on('data', function(data) {
         onData(data, stderrLinesFormatter, "stderr");
-        writeOut('\u0007');
     });
 
     prc.on('close', function(code, signal) {
@@ -296,3 +326,5 @@ if (typeof process.stdin.setRawMode == 'function') {
     tty.setRawMode(true);
 }
 process.stdin.resume();
+
+[]
