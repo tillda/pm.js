@@ -29,7 +29,7 @@ function assert(val, description, obj) {
     if (!val) {
         errorMessage(description, obj);
         killProcesses();
-        process.exit(1);
+        exitPm();
     }
 }
 
@@ -303,20 +303,27 @@ function killProcesses() {
             writeOut((spec.name.grey)+ " ");    
             return;
         }
-        writeOut(spec.name+ " ");
+        writeOut(spec.name+ " ");        
         try {
             process.kill(spec.process.pid);
+            spec.running = false;
         } catch (e) {
             errorMessage("Kill '" + spec.name + "' (pid " + spec.process.pid + ") raised an exception: " + e.message, e);
-            process.exit(1);
-        }
-        spec.running = false;
+            spec.running = null;
+        }        
     });
     writeOut("Done.".green);
 }
 
+function exitPm() {
+    setTimeout(function() {
+        process.exit(1);
+    }, 500);
+}
+
 process.on('SIGINT', function() {
     killProcesses();
+    exitPm();
 });
 
 var keypress = require('keypress')
@@ -326,8 +333,9 @@ keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
     if (key && key.ctrl && key.name == 'c') {
+        writeOut("[Exiting]\n");
         killProcesses();
-        process.exit(0);
+        exitPm();
     }
 });
 
