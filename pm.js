@@ -18,8 +18,8 @@ program
 
 var projectManagerConfig = JSON.parse(fs.readFileSync('./pm.json'));
 var processes = projectManagerConfig.processes;
-
 var maxLengths = {};
+var logFile = program.log || "pm.log";
 
 function addLength(name, str) {
     maxLengths[name] = Math.max((str || "").length, (maxLengths[name] || 0));
@@ -27,7 +27,9 @@ function addLength(name, str) {
 
 function assert(val, description, obj) {
     if (!val) {
-        fail(description, obj);
+        errorMessage(description, obj);
+        killProcesses();
+        process.exit(1);
     }
 }
 
@@ -181,13 +183,11 @@ function writeOut(str) {
     process.stdout.write(str);
 }
 
-function fail(message, obj) {
+function errorMessage(message, obj) {
     writeOut("\n"+(" ERROR ".redBG.white)+ " " + message.red);
     if (obj) {
-        writeOut("\n" + "->".red + " " + JSON.stringify(obj).grey);
+        writeOut(" " + (" on ".redBG.white) + " " + JSON.stringify(obj).grey);
     }
-    killProcesses();
-    process.exit(1);
 }
 
 var lastStdType = "stdout";
@@ -299,10 +299,16 @@ function killProcesses() {
     exiting = true;
     writeOut("\n\nExiting: ".white);
     processes.forEach(function(spec) {
+        if (!spec.running) {
+            writeOut((spec.name.grey)+ " ");    
+            return;
+        }
         writeOut(spec.name+ " ");
         try {
             process.kill(spec.process.pid);
         } catch (e) {
+            errorMessage("Kill '" + spec.name + "' (pid " + spec.process.pid + ") raised an exception: " + e.message, e);
+            process.exit(1);
         }
         spec.running = false;
     });
