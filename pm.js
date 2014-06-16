@@ -25,6 +25,12 @@ function addLength(name, str) {
     maxLengths[name] = Math.max((str || "").length, (maxLengths[name] || 0));
 }
 
+function assert(val, description, obj) {
+    if (!val) {
+        fail(description, obj);
+    }
+}
+
 processes.forEach(function(process) {
     if (process.cmd) {
         var tokens = shellParse(process.cmd);
@@ -64,10 +70,6 @@ if (program.info) {
     process.exit(0);
 }
 
-
-function checkWorkingDirectory(wd) {
-
-}
 
 if (program.cmd) {
     var p = processes.filter(function(process) {
@@ -179,8 +181,11 @@ function writeOut(str) {
     process.stdout.write(str);
 }
 
-function fail(message) {
-    writeOut(addHeaders("ERROR".red, message.white, true, stdoutLinesFormatter));
+function fail(message, obj) {
+    writeOut("\n"+(" ERROR ".redBG.white)+ " " + message.red);
+    if (obj) {
+        writeOut("\n" + "->".red + " " + JSON.stringify(obj).grey);
+    }
     killProcesses();
     process.exit(1);
 }
@@ -217,9 +222,7 @@ function concatLines(s1, s2) {
 
 function run(spec) {
 
-    if (spec.cwd && !fs.existsSync(spec.cwd)) {
-        fail("Failed starting process '"+spec.name+"', directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').");
-    }
+    checkCorrectProcessDefinition(spec);
 
     var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
     spec.running = true;
@@ -329,4 +332,8 @@ if (typeof process.stdin.setRawMode == 'function') {
 }
 process.stdin.resume();
 
-[]
+function checkCorrectProcessDefinition(spec) {
+    assert(spec.name, "Process specification must have a .name", spec);
+    assert(spec.cmd, "Process specification must have a .cmd - the command to run", spec);
+    assert(!spec.cwd || (spec.cwd && fs.existsSync(spec.cwd)), "Directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').", spec);   
+}
