@@ -268,15 +268,17 @@ function run(spec) {
     });
 
     prc.on('close', function(code, signal) {
-        if (!exiting && (code != 0)) {
-            console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
-        } else {
-            console.log("Process " + spec.name + " was terminated. (Code: " + code + ", signal: " + signal + ")");
-        }
-        spec.running = false;
-        if (!isSomeProcessRunning()) {
-            writeOut("Nothing to do.");        
-            process.exit(0);
+        if (!exiting) {
+            spec.running = false;
+            if (code != 0) {
+                console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
+            } else {
+                console.log("Process " + spec.name + " was terminated. (Code: " + code + ", signal: " + signal + ")");
+            }
+            if (!isSomeProcessRunning()) {
+                writeOut("Nothing to do.");        
+                process.exit(0);
+            }
         }
     });
 
@@ -321,10 +323,18 @@ function exitPm() {
     }, 500);
 }
 
-process.on('SIGINT', function() {
-    killProcesses();
-    exitPm();
-});
+function exitHandler() {
+    if (!exiting) {
+        writeOut("[Exiting]\n");
+        exiting = true;
+        killProcesses();
+        exitPm();
+    }
+}
+
+process.on('exit', exitHandler);
+process.on('SIGINT', exitHandler);
+process.on('uncaughtException', exitHandler);
 
 var keypress = require('keypress')
   , tty = require('tty');
@@ -333,9 +343,7 @@ keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
     if (key && key.ctrl && key.name == 'c') {
-        writeOut("[Exiting]\n");
-        killProcesses();
-        exitPm();
+        exitHandler();
     }
 });
 
@@ -344,6 +352,7 @@ if (typeof process.stdin.setRawMode == 'function') {
 } else {
     tty.setRawMode(true);
 }
+
 process.stdin.resume();
 
 function checkCorrectProcessDefinition(spec) {
